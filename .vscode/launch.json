@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Chrome against localhost via py proxy",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8000",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "Serve with Python Proxy"
+        },
+        {
+            "name": "Launch Chrome against workspace folder with cors",
+            "type": "chrome",
+            "request": "launch",
+            "url": "file://${workspaceFolder}/index.html",
+            "webRoot": "${workspaceFolder}",
+            "runtimeArgs": [
+                "--disable-web-security",
+                "--user-data-dir=${workspaceFolder}/.chrome_dev_data"
+            ],
+        }
+    ]
+}
