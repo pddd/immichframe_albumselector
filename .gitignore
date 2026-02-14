@@ -1,0 +1,6 @@
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+.chrome_dev_data/

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immich Album Selector For Immichframe</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-radius: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            color: #111827;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Auth Section */
+        .auth-container {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: grid;
+            gap: 1rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        input {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 0.5rem;
+        }
+
+        button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Output Section */
+        .output-container {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            width: 100%;
+            border: 1px solid #e5e7eb;
+        }
+
+        .output-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        #output-code {
+            background-color: #1f2937;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        /* Albums Grid */
+        .albums-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .album-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .album-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .album-card.selected {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+
+        .album-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--primary-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .album-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #e5e7eb;
+        }
+
+        .album-info {
+            padding: 1rem;
+        }
+
+        .album-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .album-count {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .error-message {
+            color: #ef4444;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Immich Multi-Album Selector</h1>
+
+        <div class="auth-container">
+            <div class="form-group">
+                <label for="server-url">Server URL</label>
+                <input type="text" id="server-url" placeholder="https://your-immich-instance.com" value="">
+            </div>
+            <div class="form-group">
+                <label for="api-key">API Key</label>
+                <input type="password" id="api-key" placeholder="Enter your Immich API Key">
+            </div>
+            <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="use-proxy-checkbox" style="width: auto;">
+                <label for="use-proxy-checkbox" style="margin: 0; font-weight: normal;">Use Proxy (Recommended for
+                    localhost)</label>
+            </div>
+            <button id="connect-btn">Connect & Load Albums</button>
+            <div id="error-msg" class="error-message"></div>
+        </div>
+
+        <div class="output-container">
+            <span class="output-label">Selected Album IDs (Live JSON Array):</span>
+            <div id="output-code">[]</div>
+        </div>
+
+        <div id="loading" class="loading">Loading albums...</div>
+        <div id="albums-grid" class="albums-grid"></div>
+    </div>
+
+    <script>
+        const serverUrlInput = document.getElementById('server-url');
+        const apiKeyInput = document.getElementById('api-key');
+        const connectBtn = document.getElementById('connect-btn');
+        const albumsGrid = document.getElementById('albums-grid');
+        const outputCode = document.getElementById('output-code');
+        const errorMsg = document.getElementById('error-msg');
+        const loading = document.getElementById('loading');
+        const useProxyCheckbox = document.getElementById('use-proxy-checkbox');
+
+        let selectedAlbumIds = new Set();
+        let albums = [];
+
+        // Save/Load inputs from localStorage for convenience
+        serverUrlInput.value = localStorage.getItem('immich_server_url') || '';
+        apiKeyInput.value = localStorage.getItem('immich_api_key') || '';
+
+        // Default to true if not set, or restore value
+        const storedProxy = localStorage.getItem('immich_use_proxy');
+        useProxyCheckbox.checked = storedProxy === null ? true : storedProxy === 'true';
+
+        connectBtn.addEventListener('click', loadAlbums);
+
+        function updateOutput() {
+            const arr = Array.from(selectedAlbumIds);
+            // Format as: ['id1', 'id2', ...]
+            const jsonString = JSON.stringify(arr).replace(/"/g, "'");
+            outputCode.innerText = jsonString;
+        }
+
+        async function loadAlbums() {
+            const serverUrl = serverUrlInput.value.replace(/\/$/, ''); // Remove trailing slash
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!serverUrl || !apiKey) {
+                showError('Please enter both Server URL and API Key.');
+                return;
+            }
+
+            // Save credentials
+            localStorage.setItem('immich_server_url', serverUrl);
+            localStorage.setItem('immich_api_key', apiKey);
+            localStorage.setItem('immich_use_proxy', useProxyCheckbox.checked);
+
+            // Reset UI
+            albumsGrid.innerHTML = '';
+            showError('');
+            loading.style.display = 'block';
+            selectedAlbumIds.clear();
+            updateOutput();
+
+            try {
+                // Use proxy if checkbox is checked
+                const useProxy = useProxyCheckbox.checked;
+
+                let fetchUrl = `${serverUrl}/api/albums?shared=true`;
+
+                if (useProxy) {
+                    // Use local proxy
+                    fetchUrl = `${window.location.origin}/proxy?url=${encodeURIComponent(fetchUrl)}`;
+                }
+
+                console.log("Fetching albums from:", fetchUrl);
+
+                const response = await fetch(fetchUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'x-api-key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch albums: ${response.status} ${response.statusText}`);
+                }
+
+                albums = await response.json();
+                renderAlbums(albums, serverUrl, apiKey, useProxy);
+
+            } catch (err) {
+                console.error(err);
+                showError(err.message + (window.location.hostname === 'localhost' ? ". Ensure proxy_server.py is running." : ""));
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function renderAlbums(albumsList, serverUrl, apiKey, useProxy) {
+            if (albumsList.length === 0) {
+                albumsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No albums found.</p>';
+                return;
+            }
+
+            // Sort albums by name
+            albumsList.sort((a, b) => a.albumName.localeCompare(b.albumName));
+
+            for (const album of albumsList) {
+                const card = document.createElement('div');
+                card.className = 'album-card';
+                card.dataset.id = album.id;
+
+                // Placeholder initially
+                let imgHtml = `<img src="https://via.placeholder.com/250x200?text=Loading..." class="album-thumbnail" id="img-${album.id}" style="width: 100%; height: 100%; object-fit: cover;">`;
+
+                card.innerHTML = `
+                    <div class="image-container" style="height: 200px; background: #e5e7eb; overflow: hidden; position: relative;">
+                        ${imgHtml}
+                    </div>
+                    <div class="album-info">
+                        <div class="album-name">${album.albumName}</div>
+                        <div class="album-count">${album.assetCount} items</div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => toggleSelection(card, album.id));
+                albumsGrid.appendChild(card);
+
+                // Load image asynchronously
+                if (album.albumThumbnailAssetId) {
+                    // Start loading without awaiting to parallelize with other card builds
+                    loadImageBlob(album, serverUrl, apiKey, useProxy);
+                } else {
+                    const img = document.getElementById(`img-${album.id}`);
+                    if (img) img.src = 'https://via.placeholder.com/250x200?text=No+Preview';
+                }
+            }
+        }
+
+        async function loadImageBlob(album, serverUrl, apiKey, useProxy) {
+            try {
+                let fetchUrl = `${serverUrl}/api/assets/${album.albumThumbnailAssetId}/thumbnail?format=WEBP`;
+
+                if (useProxy) {
+                    // Proxy the image request too
+                    fetchUrl = `${window.location.origin}/proxy?url=${encodeURIComponent(fetchUrl)}`;
+                }
+
+                const response = await fetch(fetchUrl, {
+                    headers: {
+                        'x-api-key': apiKey,
+                        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
+                    }
+                });
+
+                if (!response.ok) throw new Error(response.statusText);
+
+                const blob = await response.blob();
+                const objectURL = URL.createObjectURL(blob);
+
+                const img = document.getElementById(`img-${album.id}`);
+                if (img) {
+                    img.src = objectURL;
+                    img.onload = () => {
+                        // Optional: revoke URL after load to free memory
+                        // URL.revokeObjectURL(objectURL); // Warning: depends on how long we need it
+                    };
+                }
+
+            } catch (e) {
+                console.error(`Failed to load image for album ${album.albumName}`, e);
+                const img = document.getElementById(`img-${album.id}`);
+                if (img) img.src = 'https://via.placeholder.com/250x200?text=Auth+Error';
+            }
+        }
+
+        function toggleSelection(card, id) {
+            if (selectedAlbumIds.has(id)) {
+                selectedAlbumIds.delete(id);
+                card.classList.remove('selected');
+            } else {
+                selectedAlbumIds.add(id);
+                card.classList.add('selected');
+            }
+            updateOutput();
+        }
+
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.style.display = msg ? 'block' : 'none';
+        }
+    </script>
+</body>
+
+</html>
